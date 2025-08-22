@@ -1,7 +1,7 @@
 
 # General Usage
 
-1. Clone Repo:
+1. Clone or download Repo:
 
     ```bash
     git clone https://github.com/ml3rc/shotoverConfigLoader.git
