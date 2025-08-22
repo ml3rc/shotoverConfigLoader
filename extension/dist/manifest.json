@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Shotover Setting Loader",
+  "version": "1.0.0",
+  "description": "Save/load settings for Shotover web ui",
+  "permissions": ["scripting", "downloads", "activeTab", "storage","tabs"],
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost/*",
+        "https://localhost/*",
+        "http://127.0.0.1/*",
+        "https://127.0.0.1/*",
+        "https://chatgpt.com/*",
+        "https://developer.mozilla.org/*",
+        "file:///*"
+
+      ],
+      "js": ["/assets/content.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "/src/popup/popup.html"
+  }
+}
