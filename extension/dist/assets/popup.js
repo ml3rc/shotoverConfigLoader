@@ -5896,10 +5896,12 @@ function Popup($$anchor, $$props) {
     console.log(baseUrl);
     console.log(path);
     await setActiveTabUrl(baseUrl.toString());
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await new Promise((resolve) => setTimeout(resolve, 1e3));
+    await importShotoverSettings(get(settings)[path]);
+    await new Promise((resolve) => setTimeout(resolve, 500));
     await importShotoverSettings(get(settings)[path]);
     set(loadStatus, "Wait to send: " + baseUrl.pathname);
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     set(loadWorking, false);
   }
   async function loadPages() {

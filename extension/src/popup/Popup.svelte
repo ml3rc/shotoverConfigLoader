@@ -181,13 +181,18 @@
     console.log(baseUrl)
     console.log(path)
     await setActiveTabUrl(baseUrl.toString());
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    // wait until page loades
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
 
     //set settings
     await api.importShotoverSettings(settings[path])
+    // wait until page opens tabs
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    //set settings again for the new tabs
+    await api.importShotoverSettings(settings[path])
     loadStatus = "Wait to send: " + baseUrl.pathname;
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     loadWorking = false;
   }
 
