@@ -5758,16 +5758,21 @@ function CircularProgress($$anchor, $$props) {
   append($$anchor, div);
   return pop({ getElement });
 }
-var root_2 = /* @__PURE__ */ from_html(`<div class="center svelte-72x2rr"><h1>Shotover Setting Loader</h1></div>`);
-var root_5 = /* @__PURE__ */ from_html(`<div class="center-horizontal svelte-72x2rr"><div class="def-padding svelte-72x2rr"><!></div></div>`);
-var root_8 = /* @__PURE__ */ from_html(`<div class="center svelte-72x2rr"><div class="def-padding svelte-72x2rr"><!></div> <div class="def-padding svelte-72x2rr"><p class="status svelte-72x2rr"> </p></div></div>`);
-var root_12 = /* @__PURE__ */ from_html(`<div class="file-name svelte-72x2rr"> </div>`);
-var root_16 = /* @__PURE__ */ from_html(`<div class="def-padding svelte-72x2rr"><!></div>`);
-var root_13 = /* @__PURE__ */ from_html(`<div class="def-padding svelte-72x2rr"><!></div> <!>`, 1);
-var root_11 = /* @__PURE__ */ from_html(`<div class="center svelte-72x2rr"><div class="def-padding svelte-72x2rr"><div class="file-input-container svelte-72x2rr"><input type="file" id="fileInput" accept=".json" class="svelte-72x2rr"/> <label for="fileInput">Drag/Choose settings(.JSON) <!></label></div></div> <!></div>`);
-var root_19 = /* @__PURE__ */ from_html(`<div class="center svelte-72x2rr"><div class="def-padding svelte-72x2rr"><!></div> <div class="def-padding svelte-72x2rr"><p class="status svelte-72x2rr"> </p></div></div>`);
-var root_1 = /* @__PURE__ */ from_html(`<!> <!> <!>`, 1);
-var root = /* @__PURE__ */ from_html(`<div class="main svelte-72x2rr"><!> <div class="logo-div svelte-72x2rr"><a href="https://www.samcam.ch/" target="_blank" class="logo-div svelte-72x2rr"><img class="logo svelte-72x2rr" alt="SAMCAM Logo"/></a></div></div>`);
+var root_3 = /* @__PURE__ */ from_html(`<h1>Shotover Setting Loader</h1>`);
+var root_4 = /* @__PURE__ */ from_html(`<h1 class="waring svelte-147gk6q">⚠ Do not click anywhere ⚠</h1>`);
+var root_2 = /* @__PURE__ */ from_html(`<div class="center svelte-147gk6q"><!></div>`);
+var root_7 = /* @__PURE__ */ from_html(`<div class="center section-padding svelte-147gk6q"><div class="input-padding svelte-147gk6q"><!></div></div>`);
+var root_10 = /* @__PURE__ */ from_html(`<div class="center section-padding svelte-147gk6q"><div class="input-padding svelte-147gk6q"><!></div> <div class="input-padding svelte-147gk6q"><p class="status svelte-147gk6q"> </p></div></div>`);
+var root_15 = /* @__PURE__ */ from_html(`<div class="file-name svelte-147gk6q"> </div>`);
+var root_14 = /* @__PURE__ */ from_html(`<div class="file-input-container input-padding svelte-147gk6q"><input type="file" id="fileInput" accept=".json" class="svelte-147gk6q"/> <label for="fileInput">Drag/Choose settings(.JSON) <!></label></div>`);
+var root_19 = /* @__PURE__ */ from_html(`<div class="input-padding center fit-content svelte-147gk6q"><!></div>`);
+var root_16 = /* @__PURE__ */ from_html(`<div class="input-padding svelte-147gk6q"><!></div> <div class="input-padding load-container svelte-147gk6q"></div>`, 1);
+var root_13 = /* @__PURE__ */ from_html(`<!> <!>`, 1);
+var root_22 = /* @__PURE__ */ from_html(`<div class="input-padding svelte-147gk6q"><!></div> <div class="input-padding svelte-147gk6q"><p class="status svelte-147gk6q"> </p></div>`, 1);
+var root_12 = /* @__PURE__ */ from_html(`<div class="center section-padding fit-content svelte-147gk6q"><!></div>`);
+var root_23 = /* @__PURE__ */ from_html(`<div class="center svelte-147gk6q"><a href="https://www.samcam.ch/" target="_blank" class="center svelte-147gk6q"><img class="logo svelte-147gk6q" alt="SAMCAM Logo" href="https://www.samcam.ch/"/></a></div>`);
+var root_1 = /* @__PURE__ */ from_html(`<!> <!> <!> <!>`, 1);
+var root = /* @__PURE__ */ from_html(`<div class="main fit-content svelte-147gk6q"><!></div>`);
 function Popup($$anchor, $$props) {
   push($$props, false);
   let file = /* @__PURE__ */ mutable_source(null);
@@ -5940,26 +5945,41 @@ function Popup($$anchor, $$props) {
         span: 12,
         children: ($$anchor3, $$slotProps2) => {
           var div_1 = root_2();
+          var node_2 = child(div_1);
+          {
+            var consequent = ($$anchor4) => {
+              var h1 = root_3();
+              append($$anchor4, h1);
+            };
+            var alternate = ($$anchor4) => {
+              var h1_1 = root_4();
+              append($$anchor4, h1_1);
+            };
+            if_block(node_2, ($$render) => {
+              if (!(get(saveWorking) || get(loadWorking))) $$render(consequent);
+              else $$render(alternate, false);
+            });
+          }
           append($$anchor3, div_1);
         },
         $$slots: { default: true }
       });
-      var node_2 = sibling(node_1, 2);
-      Cell(node_2, {
+      var node_3 = sibling(node_1, 2);
+      Cell(node_3, {
         span: 12,
         children: ($$anchor3, $$slotProps2) => {
           Card($$anchor3, {
             children: ($$anchor4, $$slotProps3) => {
               var fragment_2 = comment();
-              var node_3 = first_child(fragment_2);
+              var node_4 = first_child(fragment_2);
               {
-                var consequent = ($$anchor5) => {
-                  var div_2 = root_5();
+                var consequent_1 = ($$anchor5) => {
+                  var div_2 = root_7();
                   var div_3 = child(div_2);
-                  var node_4 = child(div_3);
+                  var node_5 = child(div_3);
                   {
                     let $0 = /* @__PURE__ */ derived_safe_equal(() => get(loadWorking) || get(saveWorking));
-                    Button(node_4, {
+                    Button(node_5, {
                       onclick: savePages,
                       get disabled() {
                         return get($0);
@@ -5978,20 +5998,20 @@ function Popup($$anchor, $$props) {
                   }
                   append($$anchor5, div_2);
                 };
-                var alternate = ($$anchor5) => {
-                  var div_4 = root_8();
+                var alternate_1 = ($$anchor5) => {
+                  var div_4 = root_10();
                   var div_5 = child(div_4);
-                  var node_5 = child(div_5);
-                  CircularProgress(node_5, { style: "height: 32px; width: 32px;", indeterminate: true });
+                  var node_6 = child(div_5);
+                  CircularProgress(node_6, { style: "height: 32px; width: 32px;", indeterminate: true });
                   var div_6 = sibling(div_5, 2);
                   var p = child(div_6);
                   var text_2 = child(p);
                   template_effect(() => set_text(text_2, get(saveStatus)));
                   append($$anchor5, div_4);
                 };
-                if_block(node_3, ($$render) => {
-                  if (get(saveWorking) === false) $$render(consequent);
-                  else $$render(alternate, false);
+                if_block(node_4, ($$render) => {
+                  if (get(saveWorking) === false) $$render(consequent_1);
+                  else $$render(alternate_1, false);
                 });
               }
               append($$anchor4, fragment_2);
@@ -6001,42 +6021,52 @@ function Popup($$anchor, $$props) {
         },
         $$slots: { default: true }
       });
-      var node_6 = sibling(node_2, 2);
-      Cell(node_6, {
+      var node_7 = sibling(node_3, 2);
+      Cell(node_7, {
         span: 12,
         children: ($$anchor3, $$slotProps2) => {
           Card($$anchor3, {
             children: ($$anchor4, $$slotProps3) => {
-              var fragment_5 = comment();
-              var node_7 = first_child(fragment_5);
+              var div_7 = root_12();
+              var node_8 = child(div_7);
               {
-                var consequent_3 = ($$anchor5) => {
-                  var div_7 = root_11();
-                  var div_8 = child(div_7);
-                  var div_9 = child(div_8);
-                  var input_1 = child(div_9);
-                  var label = sibling(input_1, 2);
-                  var node_8 = sibling(child(label));
+                var consequent_5 = ($$anchor5) => {
+                  var fragment_5 = root_13();
+                  var node_9 = first_child(fragment_5);
                   {
-                    var consequent_1 = ($$anchor6) => {
-                      var div_10 = root_12();
-                      var text_3 = child(div_10);
-                      template_effect(() => set_text(text_3, get(file)?.name || get(storedFileName)));
-                      append($$anchor6, div_10);
+                    var consequent_3 = ($$anchor6) => {
+                      var div_8 = root_14();
+                      var input_1 = child(div_8);
+                      var label = sibling(input_1, 2);
+                      var node_10 = sibling(child(label));
+                      {
+                        var consequent_2 = ($$anchor7) => {
+                          var div_9 = root_15();
+                          var text_3 = child(div_9);
+                          template_effect(() => set_text(text_3, get(file)?.name || get(storedFileName)));
+                          append($$anchor7, div_9);
+                        };
+                        if_block(node_10, ($$render) => {
+                          if (get(file) || get(storedFileName)) $$render(consequent_2);
+                        });
+                      }
+                      template_effect(() => set_class(label, 1, `file-input-label ${get(file) || get(storedFileName) ? "has-file" : ""}`, "svelte-147gk6q"));
+                      event("change", input_1, handleFileChange);
+                      append($$anchor6, div_8);
                     };
-                    if_block(node_8, ($$render) => {
-                      if (get(file) || get(storedFileName)) $$render(consequent_1);
+                    if_block(node_9, ($$render) => {
+                      if (!get(saveWorking)) $$render(consequent_3);
                     });
                   }
-                  var node_9 = sibling(div_8, 2);
+                  var node_11 = sibling(node_9, 2);
                   {
-                    var consequent_2 = ($$anchor6) => {
-                      var fragment_6 = root_13();
-                      var div_11 = first_child(fragment_6);
-                      var node_10 = child(div_11);
+                    var consequent_4 = ($$anchor6) => {
+                      var fragment_6 = root_16();
+                      var div_10 = first_child(fragment_6);
+                      var node_12 = child(div_10);
                       {
                         let $0 = /* @__PURE__ */ derived_safe_equal(() => get(loadWorking) || get(saveWorking));
-                        Button(node_10, {
+                        Button(node_12, {
                           onclick: loadPages,
                           get disabled() {
                             return get($0);
@@ -6053,13 +6083,13 @@ function Popup($$anchor, $$props) {
                           $$slots: { default: true }
                         });
                       }
-                      var node_11 = sibling(div_11, 2);
-                      each(node_11, 1, () => Object.keys(get(settings)), index, ($$anchor7, path) => {
-                        var div_12 = root_16();
-                        var node_12 = child(div_12);
+                      var div_11 = sibling(div_10, 2);
+                      each(div_11, 5, () => Object.keys(get(settings)), index, ($$anchor7, path) => {
+                        var div_12 = root_19();
+                        var node_13 = child(div_12);
                         {
                           let $0 = /* @__PURE__ */ derived_safe_equal(() => get(loadWorking) || get(saveWorking));
-                          Button(node_12, {
+                          Button(node_13, {
                             onclick: () => loadSinglePage(get(path)),
                             get disabled() {
                               return get($0);
@@ -6083,34 +6113,44 @@ function Popup($$anchor, $$props) {
                       });
                       append($$anchor6, fragment_6);
                     };
-                    if_block(node_9, ($$render) => {
-                      if (get(settings)) $$render(consequent_2);
+                    if_block(node_11, ($$render) => {
+                      if (get(settings)) $$render(consequent_4);
                     });
                   }
-                  template_effect(() => set_class(label, 1, `file-input-label ${get(file) || get(storedFileName) ? "has-file" : ""}`, "svelte-72x2rr"));
-                  event("change", input_1, handleFileChange);
-                  append($$anchor5, div_7);
+                  append($$anchor5, fragment_5);
                 };
-                var alternate_1 = ($$anchor5) => {
-                  var div_13 = root_19();
-                  var div_14 = child(div_13);
-                  var node_13 = child(div_14);
-                  CircularProgress(node_13, { style: "height: 32px; width: 32px;", indeterminate: true });
-                  var div_15 = sibling(div_14, 2);
-                  var p_1 = child(div_15);
+                var alternate_2 = ($$anchor5) => {
+                  var fragment_10 = root_22();
+                  var div_13 = first_child(fragment_10);
+                  var node_14 = child(div_13);
+                  CircularProgress(node_14, { style: "height: 32px; width: 32px;", indeterminate: true });
+                  var div_14 = sibling(div_13, 2);
+                  var p_1 = child(div_14);
                   var text_6 = child(p_1);
                   template_effect(() => set_text(text_6, get(loadStatus)));
-                  append($$anchor5, div_13);
+                  append($$anchor5, fragment_10);
                 };
-                if_block(node_7, ($$render) => {
-                  if (get(loadWorking) === false) $$render(consequent_3);
-                  else $$render(alternate_1, false);
+                if_block(node_8, ($$render) => {
+                  if (!get(loadWorking)) $$render(consequent_5);
+                  else $$render(alternate_2, false);
                 });
               }
-              append($$anchor4, fragment_5);
+              append($$anchor4, div_7);
             },
             $$slots: { default: true }
           });
+        },
+        $$slots: { default: true }
+      });
+      var node_15 = sibling(node_7, 2);
+      Cell(node_15, {
+        span: 12,
+        children: ($$anchor3, $$slotProps2) => {
+          var div_15 = root_23();
+          var a_1 = child(div_15);
+          var img = child(a_1);
+          template_effect(() => set_attribute(img, "src", SamcamLogo));
+          append($$anchor3, div_15);
         },
         $$slots: { default: true }
       });
@@ -6118,10 +6158,6 @@ function Popup($$anchor, $$props) {
     },
     $$slots: { default: true }
   });
-  var div_16 = sibling(node, 2);
-  var a_1 = child(div_16);
-  var img = child(a_1);
-  template_effect(() => set_attribute(img, "src", SamcamLogo));
   append($$anchor, div);
   pop();
 }

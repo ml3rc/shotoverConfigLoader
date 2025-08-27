@@ -230,43 +230,47 @@
 
 </script>
 
-<div class="main">
+<div class="main fit-content">
     <LayoutGrid>
         <Cell span={12}>
-            <div class="center">
-                <h1>Shotover Setting Loader</h1>
-            </div>
+          <div class="center">
+            {#if !(saveWorking || loadWorking)}
+              <h1>Shotover Setting Loader</h1>
+            {:else}
+              <h1 class="waring">⚠ Do not click anywhere ⚠</h1>
+            {/if}
+          </div>
         </Cell>
         <Cell span={12}>
           <Card>
-            {#if saveWorking === false}
-              <div class="center-horizontal">
-                <div class="def-padding">
-                  <Button onclick={savePages} disabled={loadWorking || saveWorking}>
-                    <Label>Save All Pages</Label>
-                  </Button>
+              {#if saveWorking === false}
+                <div class="center section-padding">
+                  <div class="input-padding">
+                    <Button onclick={savePages} disabled={loadWorking || saveWorking}>
+                      <Label>Save All Pages</Label>
+                    </Button>
+                  </div>
+                </div> 
+              {:else}
+                <div class="center section-padding">
+                  <div class="input-padding">
+                    <CircularProgress style="height: 32px; width: 32px;" indeterminate />
+                  </div>
+                  <div class="input-padding">
+                    <p class="status">
+                      {saveStatus}
+                    </p>
+                  </div>
                 </div>
-              </div> 
-            {:else}
-              <div class="center">
-                <div class="def-padding">
-                  <CircularProgress style="height: 32px; width: 32px;" indeterminate />
-                </div>
-                <div class="def-padding">
-                  <p class="status">
-                    {saveStatus}
-                  </p>
-                </div>
-              </div>
-            {/if}
+              {/if}
           </Card>
         </Cell>
         <Cell span={12}>
           <Card>
-            {#if loadWorking === false}
-              <div class="center">
-                <div class="def-padding">
-                  <div class="file-input-container">
+            <div class="center section-padding fit-content">
+              {#if !loadWorking }
+                {#if !saveWorking}
+                  <div class="file-input-container input-padding">
                     <input type="file" id="fileInput" accept=".json" on:change={handleFileChange} />
                     <label for="fileInput" class="file-input-label {file || storedFileName ? 'has-file' : ''}">
                         Drag/Choose settings(.JSON)
@@ -275,57 +279,51 @@
                         {/if}
                     </label>
                   </div>
-                </div>
+                {/if}
                 {#if settings}
-                  <div class="def-padding">
+                  <div class="input-padding">
                     <Button onclick={loadPages} disabled={loadWorking || saveWorking}>
                         <Label>Load All Pages</Label>
                     </Button>
                   </div>
-                  {#each Object.keys(settings) as path}
-                    <div class="def-padding">
-                      <Button onclick={() => loadSinglePage(path)} disabled={loadWorking || saveWorking}>
-                        <Label>
-                          Load {path.length > PATH_CHAR_LIMIT ? "…" + path.slice(-PATH_CHAR_LIMIT) : path}
-                        </Label>
-                      </Button>
-                    </div>
-                  {/each}
+                  <div class="input-padding load-container">
+                      {#each Object.keys(settings) as path}
+                          <div class="input-padding center fit-content">
+                            <Button onclick={() => loadSinglePage(path)} disabled={loadWorking || saveWorking}>
+                              <Label>
+                                Load {path.length > PATH_CHAR_LIMIT ? "…" + path.slice(-PATH_CHAR_LIMIT) : path}
+                              </Label>
+                            </Button>
+                          </div>
+                      {/each}
+                  </div>
                 {/if}
-              </div>
-            {:else}
-              <div class="center">
-                <div class="def-padding">
-                  <CircularProgress style="height: 32px; width: 32px;" indeterminate />
-                </div>
-                <div class="def-padding">
-                  <p class="status">
-                    {loadStatus}
-                  </p>
-                </div>
-              </div>
-            {/if}
+              {:else}
+                  <div class="input-padding">
+                    <CircularProgress style="height: 32px; width: 32px;" indeterminate />
+                  </div>
+                  <div class="input-padding">
+                    <p class="status">
+                      {loadStatus}
+                    </p>
+                  </div>
+              {/if}
+            </div>
           </Card>
         </Cell>
+        <Cell span={12}>
+           <div class="center">
+            <a href="https://www.samcam.ch/" target="_blank" class="center">
+              <img class="logo" alt="SAMCAM Logo" href="https://www.samcam.ch/" src={SamcamLogo}>
+            </a>
+          </div>
+        </Cell>
     </LayoutGrid>
-    <div class="logo-div">
-        <a href="https://www.samcam.ch/" target="_blank"  class="logo-div">
-          <img class="logo" alt="SAMCAM Logo" src={SamcamLogo}>
-        </a>
-    </div>
+   
 </div>
 
 
 <style>
-    html, body {
-        margin: 0;
-        padding: 0;
-        font-family: 'Roboto', sans-serif;
-        width: auto;
-        height: auto;
-        box-sizing: border-box;
-    }
-
     .status {
       color: #BDBDBD;
       text-align: center;  
@@ -334,12 +332,25 @@
       overflow-wrap: anywhere;
     }
 
+    .waring {
+      color: #ff3c00;
+      text-shadow: 0px 0px 30px #ff3c00;
+      animation: flashShadow 0.5s infinite alternate;
+    }
+
+    @keyframes flashShadow {
+      from {
+        text-shadow: 0 0 5px #ff3c00;
+      }
+      to {
+        text-shadow: 0 0 30px #ff3c00;
+      }
+    }
+
+
     .main {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        padding: 16px;
-        min-width: 360px; /* ensures popup isn’t too narrow */
+      display: inline-flex; 
+      min-width: 450px;
     }
 
     .center {
@@ -349,26 +360,23 @@
         flex-direction: column;
     }
 
-    .center-horizontal {
-        display: flex;
-        justify-content: center;
-        align-items: center;
+
+    .load-container {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(150px, 1fr));
+      justify-content: center;
+      width: 100%;
     }
 
-    .def-padding{
+    .input-padding{
+      padding: 5px;
+    }
+
+    .section-padding{
       padding: 10px;
     }
 
-    h2 {
-        font-size: 18px;
-        font-weight: 500;
-        margin-bottom: 16px;
-        text-align: center;
-        color: #ffffff;
-    }
-
     .file-input-container {
-        position: relative;
         width: 100%;
     }
 
@@ -414,20 +422,12 @@
         overflow-wrap: anywhere;
     }
 
-    .logo-div{
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-end;
-        padding: 0;
-        margin: 0;
-        width: 100%;
-    }
-
     .logo{
-        width: 50%;
+        width: 70%;
+        max-width: 200px;
+        min-width: 150px;
         padding: 0;
         margin: 0;
+
     }
 </style>
