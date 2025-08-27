@@ -17,7 +17,6 @@
   let loadWorking = false;
   let loadStatus = ""
 
-  const AUTO_MULTI_PAGE = false;
   const PATH_CHAR_LIMIT = 20;
 
   const PAGE_LIST = [
@@ -27,21 +26,48 @@
     "/lens",
     "/gimbal/motors",
     "/lens/motors",
-    "/rain_spinner",
+    "/lens/rain_spinner",
   ];
 
   async function getActiveTabUrl() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    return tab?.url;
+    if (!tab?.id || !tab?.url) return null;
+
+    const url = new URL(tab.url);
+    const origin = url.origin; // e.g. http://localhost or http://truenas
+
+    const [{ result: resource }] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        const activeBtn = document.querySelector('button.nav-item.active');
+        return activeBtn ? activeBtn.getAttribute("data-resource") : null;
+      }
+    });
+
+    return resource ? `${origin}${resource}` : origin;
   }
 
-  async function setActiveTabUrl(newUrl) {
-    console.log(newUrl)
+
+  async function setActiveTabUrl(resource) {
+    console.log("Navigating to resource:", resource);
+
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.id) {
-      await chrome.tabs.update(tab.id, { url: newUrl });
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (res) => {
+          const btn = document.querySelector(`button[data-resource="${res}"]`);
+          if (btn) {
+            btn.click();
+          } else {
+            console.warn("No button found for resource:", res);
+          }
+        },
+        args: [resource] // pass resource string into the injected function
+      });
     }
   }
+
 
   function isLocalUrl(urlString) {
     try {
@@ -75,41 +101,6 @@
     }
   }
 
-  async function saveSinglePage(){
-    saveWorking = true;
-    saveStatus = "Checking Tap URL..."
-    let setting = {};
-    const url = await getActiveTabUrl()
-    if (!url || !isLocalUrl(url)) {
-      alert("URL is not local");
-      saveWorking = false;
-      return;
-    }
-
-    const baseUrl = new URL(url);
-    saveStatus = "Saving Page: " + baseUrl.pathname
-    setting[baseUrl.pathname] = JSON.parse(await api.exportShotoverSettings());
-
-    //Log
-    console.log(setting);
-    
-    //Provide Download
-    saveStatus = "Waiting for Download..."
-    if(!setting){
-      saveWorking = false;
-      return;
-    } 
-    const blob = new Blob([JSON.stringify(setting, null, 2)], {
-      type: "application/json",
-    });
-    const urlD = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = urlD;
-    a.download = "shotover_settings_" + (new URL(await getActiveTabUrl())).pathname + ".json";
-    a.click();
-    URL.revokeObjectURL(urlD);
-    saveWorking = false;
-  }
 
   async function savePages() {
     saveWorking = true;
@@ -125,9 +116,7 @@
     for (const path of PAGE_LIST) {
       //set url
       saveStatus = "Saving Page: " + path
-      const baseUrl = new URL(url);
-      baseUrl.pathname = path;
-      await setActiveTabUrl(baseUrl.toString());
+      await setActiveTabUrl(path);
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       //action
@@ -158,7 +147,7 @@
   async function loadSinglePage(path){
     loadWorking = true;
     //Check if settings empty
-    loadStatus = "Checking Settings..."
+    loadStatus = `Checking Settings: ${path}`
     if (!settings) {
       alert("No settings loaded");
       loadWorking = false;
@@ -166,7 +155,7 @@
     }
 
     //Check if page local
-    loadStatus = "Checking if Page is local..."
+    loadStatus = "Checking if Host is local..."
     const url = await getActiveTabUrl()
     if (!url || !isLocalUrl(url)) {
       alert("URL is not local");
@@ -175,12 +164,8 @@
     }
 
     //Go to specifed path
-    const baseUrl = new URL(url);
-    loadStatus = "Going to Page: " + baseUrl.pathname;
-    baseUrl.pathname = path;
-    console.log(baseUrl)
-    console.log(path)
-    await setActiveTabUrl(baseUrl.toString());
+    loadStatus = `Going to Page: ${path}`;
+    await setActiveTabUrl(path);
     // wait until page loades
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -191,7 +176,7 @@
     await new Promise((resolve) => setTimeout(resolve, 500));
     //set settings again for the new tabs
     await api.importShotoverSettings(settings[path])
-    loadStatus = "Wait to send: " + baseUrl.pathname;
+    loadStatus = `Wait to send: ${path}`;
     await new Promise((resolve) => setTimeout(resolve, 500));
     loadWorking = false;
   }
@@ -259,11 +244,6 @@
                 <div class="def-padding">
                   <Button onclick={savePages} disabled={loadWorking || saveWorking}>
                     <Label>Save All Pages</Label>
-                  </Button>
-                </div>
-                <div class="def-padding">
-                  <Button onclick={saveSinglePage} disabled={loadWorking || saveWorking}>
-                    <Label>Save This Page</Label>
                   </Button>
                 </div>
               </div> 

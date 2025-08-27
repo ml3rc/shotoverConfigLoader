@@ -5759,13 +5759,13 @@ function CircularProgress($$anchor, $$props) {
   return pop({ getElement });
 }
 var root_2 = /* @__PURE__ */ from_html(`<div class="center svelte-72x2rr"><h1>Shotover Setting Loader</h1></div>`);
-var root_5 = /* @__PURE__ */ from_html(`<div class="center-horizontal svelte-72x2rr"><div class="def-padding svelte-72x2rr"><!></div> <div class="def-padding svelte-72x2rr"><!></div></div>`);
-var root_10 = /* @__PURE__ */ from_html(`<div class="center svelte-72x2rr"><div class="def-padding svelte-72x2rr"><!></div> <div class="def-padding svelte-72x2rr"><p class="status svelte-72x2rr"> </p></div></div>`);
-var root_14 = /* @__PURE__ */ from_html(`<div class="file-name svelte-72x2rr"> </div>`);
-var root_18 = /* @__PURE__ */ from_html(`<div class="def-padding svelte-72x2rr"><!></div>`);
-var root_15 = /* @__PURE__ */ from_html(`<div class="def-padding svelte-72x2rr"><!></div> <!>`, 1);
-var root_13 = /* @__PURE__ */ from_html(`<div class="center svelte-72x2rr"><div class="def-padding svelte-72x2rr"><div class="file-input-container svelte-72x2rr"><input type="file" id="fileInput" accept=".json" class="svelte-72x2rr"/> <label for="fileInput">Drag/Choose settings(.JSON) <!></label></div></div> <!></div>`);
-var root_21 = /* @__PURE__ */ from_html(`<div class="center svelte-72x2rr"><div class="def-padding svelte-72x2rr"><!></div> <div class="def-padding svelte-72x2rr"><p class="status svelte-72x2rr"> </p></div></div>`);
+var root_5 = /* @__PURE__ */ from_html(`<div class="center-horizontal svelte-72x2rr"><div class="def-padding svelte-72x2rr"><!></div></div>`);
+var root_8 = /* @__PURE__ */ from_html(`<div class="center svelte-72x2rr"><div class="def-padding svelte-72x2rr"><!></div> <div class="def-padding svelte-72x2rr"><p class="status svelte-72x2rr"> </p></div></div>`);
+var root_12 = /* @__PURE__ */ from_html(`<div class="file-name svelte-72x2rr"> </div>`);
+var root_16 = /* @__PURE__ */ from_html(`<div class="def-padding svelte-72x2rr"><!></div>`);
+var root_13 = /* @__PURE__ */ from_html(`<div class="def-padding svelte-72x2rr"><!></div> <!>`, 1);
+var root_11 = /* @__PURE__ */ from_html(`<div class="center svelte-72x2rr"><div class="def-padding svelte-72x2rr"><div class="file-input-container svelte-72x2rr"><input type="file" id="fileInput" accept=".json" class="svelte-72x2rr"/> <label for="fileInput">Drag/Choose settings(.JSON) <!></label></div></div> <!></div>`);
+var root_19 = /* @__PURE__ */ from_html(`<div class="center svelte-72x2rr"><div class="def-padding svelte-72x2rr"><!></div> <div class="def-padding svelte-72x2rr"><p class="status svelte-72x2rr"> </p></div></div>`);
 var root_1 = /* @__PURE__ */ from_html(`<!> <!> <!>`, 1);
 var root = /* @__PURE__ */ from_html(`<div class="main svelte-72x2rr"><!> <div class="logo-div svelte-72x2rr"><a href="https://www.samcam.ch/" target="_blank" class="logo-div svelte-72x2rr"><img class="logo svelte-72x2rr" alt="SAMCAM Logo"/></a></div></div>`);
 function Popup($$anchor, $$props) {
@@ -5785,17 +5785,39 @@ function Popup($$anchor, $$props) {
     "/lens",
     "/gimbal/motors",
     "/lens/motors",
-    "/rain_spinner"
+    "/lens/rain_spinner"
   ];
   async function getActiveTabUrl() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    return tab?.url;
+    if (!tab?.id || !tab?.url) return null;
+    const url = new URL(tab.url);
+    const origin = url.origin;
+    const [{ result: resource }] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        const activeBtn = document.querySelector("button.nav-item.active");
+        return activeBtn ? activeBtn.getAttribute("data-resource") : null;
+      }
+    });
+    return resource ? `${origin}${resource}` : origin;
   }
-  async function setActiveTabUrl(newUrl) {
-    console.log(newUrl);
+  async function setActiveTabUrl(resource) {
+    console.log("Navigating to resource:", resource);
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.id) {
-      await chrome.tabs.update(tab.id, { url: newUrl });
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (res) => {
+          const btn = document.querySelector(`button[data-resource="${res}"]`);
+          if (btn) {
+            btn.click();
+          } else {
+            console.warn("No button found for resource:", res);
+          }
+        },
+        args: [resource]
+        // pass resource string into the injected function
+      });
     }
   }
   function isLocalUrl(urlString) {
@@ -5814,34 +5836,6 @@ function Popup($$anchor, $$props) {
       return false;
     }
   }
-  async function saveSinglePage() {
-    set(saveWorking, true);
-    set(saveStatus, "Checking Tap URL...");
-    let setting = {};
-    const url = await getActiveTabUrl();
-    if (!url || !isLocalUrl(url)) {
-      alert("URL is not local");
-      set(saveWorking, false);
-      return;
-    }
-    const baseUrl = new URL(url);
-    set(saveStatus, "Saving Page: " + baseUrl.pathname);
-    setting[baseUrl.pathname] = JSON.parse(await exportShotoverSettings());
-    console.log(setting);
-    set(saveStatus, "Waiting for Download...");
-    if (!setting) {
-      set(saveWorking, false);
-      return;
-    }
-    const blob = new Blob([JSON.stringify(setting, null, 2)], { type: "application/json" });
-    const urlD = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = urlD;
-    a.download = "shotover_settings_" + new URL(await getActiveTabUrl()).pathname + ".json";
-    a.click();
-    URL.revokeObjectURL(urlD);
-    set(saveWorking, false);
-  }
   async function savePages() {
     set(saveWorking, true);
     set(saveStatus, "Checking Tap URL...");
@@ -5854,9 +5848,7 @@ function Popup($$anchor, $$props) {
     }
     for (const path of PAGE_LIST) {
       set(saveStatus, "Saving Page: " + path);
-      const baseUrl = new URL(url);
-      baseUrl.pathname = path;
-      await setActiveTabUrl(baseUrl.toString());
+      await setActiveTabUrl(path);
       await new Promise((resolve) => setTimeout(resolve, 500));
       setting[path] = JSON.parse(await exportShotoverSettings());
     }
@@ -5877,30 +5869,26 @@ function Popup($$anchor, $$props) {
   }
   async function loadSinglePage(path) {
     set(loadWorking, true);
-    set(loadStatus, "Checking Settings...");
+    set(loadStatus, `Checking Settings: ${path}`);
     if (!get(settings)) {
       alert("No settings loaded");
       set(loadWorking, false);
       return;
     }
-    set(loadStatus, "Checking if Page is local...");
+    set(loadStatus, "Checking if Host is local...");
     const url = await getActiveTabUrl();
     if (!url || !isLocalUrl(url)) {
       alert("URL is not local");
       set(loadWorking, false);
       return;
     }
-    const baseUrl = new URL(url);
-    set(loadStatus, "Going to Page: " + baseUrl.pathname);
-    baseUrl.pathname = path;
-    console.log(baseUrl);
-    console.log(path);
-    await setActiveTabUrl(baseUrl.toString());
+    set(loadStatus, `Going to Page: ${path}`);
+    await setActiveTabUrl(path);
     await new Promise((resolve) => setTimeout(resolve, 1e3));
     await importShotoverSettings(get(settings)[path]);
     await new Promise((resolve) => setTimeout(resolve, 500));
     await importShotoverSettings(get(settings)[path]);
-    set(loadStatus, "Wait to send: " + baseUrl.pathname);
+    set(loadStatus, `Wait to send: ${path}`);
     await new Promise((resolve) => setTimeout(resolve, 500));
     set(loadWorking, false);
   }
@@ -5988,39 +5976,18 @@ function Popup($$anchor, $$props) {
                       $$slots: { default: true }
                     });
                   }
-                  var div_4 = sibling(div_3, 2);
-                  var node_5 = child(div_4);
-                  {
-                    let $0 = /* @__PURE__ */ derived_safe_equal(() => get(loadWorking) || get(saveWorking));
-                    Button(node_5, {
-                      onclick: saveSinglePage,
-                      get disabled() {
-                        return get($0);
-                      },
-                      children: ($$anchor6, $$slotProps4) => {
-                        CommonLabel($$anchor6, {
-                          children: ($$anchor7, $$slotProps5) => {
-                            var text_2 = text("Save This Page");
-                            append($$anchor7, text_2);
-                          },
-                          $$slots: { default: true }
-                        });
-                      },
-                      $$slots: { default: true }
-                    });
-                  }
                   append($$anchor5, div_2);
                 };
                 var alternate = ($$anchor5) => {
-                  var div_5 = root_10();
-                  var div_6 = child(div_5);
-                  var node_6 = child(div_6);
-                  CircularProgress(node_6, { style: "height: 32px; width: 32px;", indeterminate: true });
-                  var div_7 = sibling(div_6, 2);
-                  var p = child(div_7);
-                  var text_3 = child(p);
-                  template_effect(() => set_text(text_3, get(saveStatus)));
-                  append($$anchor5, div_5);
+                  var div_4 = root_8();
+                  var div_5 = child(div_4);
+                  var node_5 = child(div_5);
+                  CircularProgress(node_5, { style: "height: 32px; width: 32px;", indeterminate: true });
+                  var div_6 = sibling(div_5, 2);
+                  var p = child(div_6);
+                  var text_2 = child(p);
+                  template_effect(() => set_text(text_2, get(saveStatus)));
+                  append($$anchor5, div_4);
                 };
                 if_block(node_3, ($$render) => {
                   if (get(saveWorking) === false) $$render(consequent);
@@ -6034,42 +6001,42 @@ function Popup($$anchor, $$props) {
         },
         $$slots: { default: true }
       });
-      var node_7 = sibling(node_2, 2);
-      Cell(node_7, {
+      var node_6 = sibling(node_2, 2);
+      Cell(node_6, {
         span: 12,
         children: ($$anchor3, $$slotProps2) => {
           Card($$anchor3, {
             children: ($$anchor4, $$slotProps3) => {
-              var fragment_6 = comment();
-              var node_8 = first_child(fragment_6);
+              var fragment_5 = comment();
+              var node_7 = first_child(fragment_5);
               {
                 var consequent_3 = ($$anchor5) => {
-                  var div_8 = root_13();
+                  var div_7 = root_11();
+                  var div_8 = child(div_7);
                   var div_9 = child(div_8);
-                  var div_10 = child(div_9);
-                  var input_1 = child(div_10);
+                  var input_1 = child(div_9);
                   var label = sibling(input_1, 2);
-                  var node_9 = sibling(child(label));
+                  var node_8 = sibling(child(label));
                   {
                     var consequent_1 = ($$anchor6) => {
-                      var div_11 = root_14();
-                      var text_4 = child(div_11);
-                      template_effect(() => set_text(text_4, get(file)?.name || get(storedFileName)));
-                      append($$anchor6, div_11);
+                      var div_10 = root_12();
+                      var text_3 = child(div_10);
+                      template_effect(() => set_text(text_3, get(file)?.name || get(storedFileName)));
+                      append($$anchor6, div_10);
                     };
-                    if_block(node_9, ($$render) => {
+                    if_block(node_8, ($$render) => {
                       if (get(file) || get(storedFileName)) $$render(consequent_1);
                     });
                   }
-                  var node_10 = sibling(div_9, 2);
+                  var node_9 = sibling(div_8, 2);
                   {
                     var consequent_2 = ($$anchor6) => {
-                      var fragment_7 = root_15();
-                      var div_12 = first_child(fragment_7);
-                      var node_11 = child(div_12);
+                      var fragment_6 = root_13();
+                      var div_11 = first_child(fragment_6);
+                      var node_10 = child(div_11);
                       {
                         let $0 = /* @__PURE__ */ derived_safe_equal(() => get(loadWorking) || get(saveWorking));
-                        Button(node_11, {
+                        Button(node_10, {
                           onclick: loadPages,
                           get disabled() {
                             return get($0);
@@ -6077,8 +6044,8 @@ function Popup($$anchor, $$props) {
                           children: ($$anchor7, $$slotProps4) => {
                             CommonLabel($$anchor7, {
                               children: ($$anchor8, $$slotProps5) => {
-                                var text_5 = text("Load All Pages");
-                                append($$anchor8, text_5);
+                                var text_4 = text("Load All Pages");
+                                append($$anchor8, text_4);
                               },
                               $$slots: { default: true }
                             });
@@ -6086,13 +6053,13 @@ function Popup($$anchor, $$props) {
                           $$slots: { default: true }
                         });
                       }
-                      var node_12 = sibling(div_12, 2);
-                      each(node_12, 1, () => Object.keys(get(settings)), index, ($$anchor7, path) => {
-                        var div_13 = root_18();
-                        var node_13 = child(div_13);
+                      var node_11 = sibling(div_11, 2);
+                      each(node_11, 1, () => Object.keys(get(settings)), index, ($$anchor7, path) => {
+                        var div_12 = root_16();
+                        var node_12 = child(div_12);
                         {
                           let $0 = /* @__PURE__ */ derived_safe_equal(() => get(loadWorking) || get(saveWorking));
-                          Button(node_13, {
+                          Button(node_12, {
                             onclick: () => loadSinglePage(get(path)),
                             get disabled() {
                               return get($0);
@@ -6100,11 +6067,11 @@ function Popup($$anchor, $$props) {
                             children: ($$anchor8, $$slotProps4) => {
                               CommonLabel($$anchor8, {
                                 children: ($$anchor9, $$slotProps5) => {
-                                  var text_6 = text();
-                                  template_effect(($02) => set_text(text_6, `Load ${$02 ?? ""}`), [
+                                  var text_5 = text();
+                                  template_effect(($02) => set_text(text_5, `Load ${$02 ?? ""}`), [
                                     () => get(path).length > PATH_CHAR_LIMIT ? "…" + get(path).slice(-PATH_CHAR_LIMIT) : get(path)
                                   ]);
-                                  append($$anchor9, text_6);
+                                  append($$anchor9, text_5);
                                 },
                                 $$slots: { default: true }
                               });
@@ -6112,35 +6079,35 @@ function Popup($$anchor, $$props) {
                             $$slots: { default: true }
                           });
                         }
-                        append($$anchor7, div_13);
+                        append($$anchor7, div_12);
                       });
-                      append($$anchor6, fragment_7);
+                      append($$anchor6, fragment_6);
                     };
-                    if_block(node_10, ($$render) => {
+                    if_block(node_9, ($$render) => {
                       if (get(settings)) $$render(consequent_2);
                     });
                   }
                   template_effect(() => set_class(label, 1, `file-input-label ${get(file) || get(storedFileName) ? "has-file" : ""}`, "svelte-72x2rr"));
                   event("change", input_1, handleFileChange);
-                  append($$anchor5, div_8);
+                  append($$anchor5, div_7);
                 };
                 var alternate_1 = ($$anchor5) => {
-                  var div_14 = root_21();
-                  var div_15 = child(div_14);
-                  var node_14 = child(div_15);
-                  CircularProgress(node_14, { style: "height: 32px; width: 32px;", indeterminate: true });
-                  var div_16 = sibling(div_15, 2);
-                  var p_1 = child(div_16);
-                  var text_7 = child(p_1);
-                  template_effect(() => set_text(text_7, get(loadStatus)));
-                  append($$anchor5, div_14);
+                  var div_13 = root_19();
+                  var div_14 = child(div_13);
+                  var node_13 = child(div_14);
+                  CircularProgress(node_13, { style: "height: 32px; width: 32px;", indeterminate: true });
+                  var div_15 = sibling(div_14, 2);
+                  var p_1 = child(div_15);
+                  var text_6 = child(p_1);
+                  template_effect(() => set_text(text_6, get(loadStatus)));
+                  append($$anchor5, div_13);
                 };
-                if_block(node_8, ($$render) => {
+                if_block(node_7, ($$render) => {
                   if (get(loadWorking) === false) $$render(consequent_3);
                   else $$render(alternate_1, false);
                 });
               }
-              append($$anchor4, fragment_6);
+              append($$anchor4, fragment_5);
             },
             $$slots: { default: true }
           });
@@ -6151,8 +6118,8 @@ function Popup($$anchor, $$props) {
     },
     $$slots: { default: true }
   });
-  var div_17 = sibling(node, 2);
-  var a_1 = child(div_17);
+  var div_16 = sibling(node, 2);
+  var a_1 = child(div_16);
   var img = child(a_1);
   template_effect(() => set_attribute(img, "src", SamcamLogo));
   append($$anchor, div);
