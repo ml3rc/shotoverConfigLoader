@@ -5394,10 +5394,14 @@ function Cell($$anchor, $$props) {
 }
 async function callContentScript(type, payload) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) {
+    throw new Error("No active tab found");
+  }
   return new Promise((resolve, reject) => {
     chrome.tabs.sendMessage(tab.id, { type, payload }, (response) => {
       if (chrome.runtime.lastError) {
-        reject(chrome.runtime.lastError);
+        console.warn("Content script not available:", chrome.runtime.lastError.message);
+        resolve(null);
       } else {
         resolve(response);
       }
@@ -5855,7 +5859,11 @@ function Popup($$anchor, $$props) {
       set(saveStatus, "Saving Page: " + path);
       await setActiveTabUrl(path);
       await new Promise((resolve) => setTimeout(resolve, 1200));
-      setting[path] = JSON.parse(await exportShotoverSettings());
+      setting[path] = await exportShotoverSettings();
+      if (!setting[path]) {
+        console.warn("Skipping page", path, "because no response from content script");
+        continue;
+      }
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     console.log(setting);

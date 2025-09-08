@@ -69,6 +69,7 @@
   }
 
 
+
   function isLocalUrl(urlString) {
     try {
       const url = new URL(urlString);
@@ -120,7 +121,11 @@
       await new Promise((resolve) => setTimeout(resolve, 1200));
 
       //action
-      setting[path] = JSON.parse(await api.exportShotoverSettings());
+      setting[path] = await api.exportShotoverSettings();
+      if (!setting[path]) {
+        console.warn("Skipping page", path, "because no response from content script");
+        continue;
+      }
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
 
