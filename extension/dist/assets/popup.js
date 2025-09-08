@@ -5854,8 +5854,9 @@ function Popup($$anchor, $$props) {
     for (const path of PAGE_LIST) {
       set(saveStatus, "Saving Page: " + path);
       await setActiveTabUrl(path);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 1200));
       setting[path] = JSON.parse(await exportShotoverSettings());
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
     console.log(setting);
     set(saveStatus, "Waiting for Download...");
@@ -5889,7 +5890,7 @@ function Popup($$anchor, $$props) {
     }
     set(loadStatus, `Going to Page: ${path}`);
     await setActiveTabUrl(path);
-    await new Promise((resolve) => setTimeout(resolve, 1e3));
+    await new Promise((resolve) => setTimeout(resolve, 1200));
     await importShotoverSettings(get(settings)[path]);
     await new Promise((resolve) => setTimeout(resolve, 500));
     await importShotoverSettings(get(settings)[path]);

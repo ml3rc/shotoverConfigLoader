@@ -117,10 +117,11 @@
       //set url
       saveStatus = "Saving Page: " + path
       await setActiveTabUrl(path);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 1200));
 
       //action
       setting[path] = JSON.parse(await api.exportShotoverSettings());
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
 
     //Log
@@ -167,7 +168,7 @@
     loadStatus = `Going to Page: ${path}`;
     await setActiveTabUrl(path);
     // wait until page loades
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1200));
 
 
     //set settings
