@@ -53,16 +53,25 @@ function importShotoverSettings(settings) {
 function importSingleEl(setting) {
   const { selector, type, value } = setting;
   const el = document.querySelector(selector);
-  if (!el) return;
+  if (!el) {
+    console.warn(`Element not found for selector: ${selector}`);
+    return;
+  }
+  el.focus();
   if (type === "checkbox" || type === "radio") {
     el.checked = value;
   } else if (type === "contenteditable") {
     el.innerHTML = value;
+  } else if (el.tagName.toLowerCase() === "select") {
+    el.value = value;
   } else {
     el.value = value;
   }
   el.dispatchEvent(new Event("input", { bubbles: true }));
   el.dispatchEvent(new Event("change", { bubbles: true }));
+  el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  el.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter", bubbles: true }));
+  setTimeout(() => el.blur(), 10);
 }
 const handlers = {
   exportShotoverSettings,
@@ -79,9 +88,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.error("Handler error:", error);
       sendResponse({ error: error.message });
     }
-  } else {
-    console.warn("Unknown handler:", message.type);
-    sendResponse({ error: "Unknown handler" });
   }
   return true;
 });

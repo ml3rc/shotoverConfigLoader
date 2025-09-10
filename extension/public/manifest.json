@@ -3,15 +3,27 @@
   "name": "Shotover Setting Loader",
   "version": "1.0.0",
   "description": "Save/load settings for Shotover web ui",
-  "permissions": ["scripting", "downloads", "activeTab", "storage","tabs"],
+  "permissions": [
+    "scripting", 
+    "downloads", 
+    "activeTab", 
+    "storage",
+    "tabs",
+    "webRequest",
+    "webRequestBlocking"],
   "content_scripts": [
     {
       "matches": [
-        "<all_urls>"
+        "*://localhost/*"
       ],
       "js": ["/assets/content.js"]
     }
   ],
+  "background": {
+    "service_worker": "/assets/background.js"
+  },
+  "host_permissions": [
+    "*://localhost/*"],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

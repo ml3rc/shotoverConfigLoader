@@ -73,29 +73,78 @@ function importShotoverSettings(settings) {
   }
 }
 
-function importSingleEl(setting){
+
+// Import a single setting
+function importSingleEl(setting) {
   const { selector, type, value } = setting;
-    const el = document.querySelector(selector);
-    if (!el) return;
+  const el = document.querySelector(selector);
+  if (!el) {
+    console.warn(`Element not found for selector: ${selector}`);
+    return;
+  }
 
-    if (type === "checkbox" || type === "radio") {
-      el.checked = value;
-    } else if (type === "contenteditable") {
-      el.innerHTML = value;
-    } else {
-      el.value = value;
-    }
+  // // Find the [data-type] container to get the field ID
+  // const container = el.closest('[data-type]');
+  // if (!container) {
+  //   console.warn(`No [data-type] container found for element: ${selector}`);
+  //   return;
+  // }
+  // const fieldId = container.id;
 
-    // Trigger events so UI reacts
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    el.dispatchEvent(new Event("change", { bubbles: true }));
+  // Set the DOM value
+  el.focus();
+  if (type === 'checkbox' || type === 'radio') {
+    el.checked = value;
+  } else if (type === 'contenteditable') {
+    el.innerHTML = value;
+  } else if (el.tagName.toLowerCase() === 'select') {
+    el.value = value;
+  } else {
+    el.value = value;
+  }
+
+  // Trigger DOM events
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+  el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  el.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+
+  // Send message to page script to commit the field
+  // window.postMessage({
+  //   source: 'chrome-extension',
+  //   action: 'commitField',
+  //   fieldId,
+  //   value
+  // }, '*');
+
+  // Listen for the result
+  // const listener = (event) => {
+  //   if (event.source === window && event.data.source === 'page-script' && event.data.action === 'commitResult' && event.data.fieldId === fieldId) {
+  //     window.removeEventListener('message', listener);
+  //     if (event.data.success) {
+  //       console.log(`Committed field: ${fieldId} with value: ${value}`);
+  //       callback({ success: true });
+  //     } else {
+  //       console.warn(`Failed to commit field: ${fieldId} - ${event.data.error}`);
+  //       // Fallback to keypress
+  //       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  //       el.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+  //       callback({ success: false, error: event.data.error });
+  //     }
+  //   }
+  // };
+  // window.addEventListener('message', listener);
+
+  // Blur after a delay
+  setTimeout(() => el.blur(), 10);
 }
+
 
 
 //handler list
 const handlers = {
     exportShotoverSettings,
-    importShotoverSettings
+    importShotoverSettings,
 }
 
 //listener
@@ -111,11 +160,66 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.error('Handler error:', error);
       sendResponse({ error: error.message });
     }
-  } else {
-    console.warn('Unknown handler:', message.type);
-    sendResponse({ error: "Unknown handler" });
   }
   return true;
 });
+
+// function injectPageScript() {
+//   const script = document.createElement('script');
+//   script.textContent = `
+//     // Store the SCS_Content instance globally
+//     let SCSContentInstance = null;
+//     const OriginalSCSContent = window.SCS_Content || function() {};
+//     window.SCS_Content = function() {
+//       const instance = new OriginalSCSContent();
+//       SCSContentInstance = instance;
+//       return instance;
+//     };
+
+//     // Listen for messages from the content script
+//     window.addEventListener('message', function(event) {
+//       if (event.source !== window || !event.data || event.data.source !== 'chrome-extension') {
+//         return;
+//       }
+//       const { action, fieldId, value } = event.data;
+//       if (action === 'commitField' && SCSContentInstance && SCSContentInstance.fields instanceof Map) {
+//         const field = SCSContentInstance.fields.get(fieldId);
+//         if (field && typeof field.commit === 'function') {
+//           // Set the field value and commit
+//           field.value = value; // Set the value on the SCS_Field
+//           field.commit(); // Trigger server send
+//           window.postMessage({
+//             source: 'page-script',
+//             action: 'commitResult',
+//             fieldId,
+//             success: true
+//           }, '*');
+//         } else {
+//           window.postMessage({
+//             source: 'page-script',
+//             action: 'commitResult',
+//             fieldId,
+//             success: false,
+//             error: 'Field not found or no commit method'
+//           }, '*');
+//         }
+//       }
+//     });
+//   `;
+//   document.head.appendChild(script);
+//   document.head.removeChild(script);
+// }
+
+// document.addEventListener('DOMContentLoaded', () => {
+//   injectPageScript();
+//   window.postMessage({
+//     source: 'chrome-extension',
+//     action: 'commitField',
+//     fieldId,
+//     value
+//   }, '*');
+//   console.log("Added SCS page script...");
+// });
+
 
 console.log("Shotover Setting Loader Content.js loaded...");

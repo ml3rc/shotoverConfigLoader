@@ -20,10 +20,11 @@
   const PATH_CHAR_LIMIT = 20;
 
   const PAGE_LIST = [
-    "/network",
+    // "/network",
     "/controller",
     "/gimbal",
     "/lens",
+    "/wheels",
     "/gimbal/motors",
     "/lens/motors",
     "/lens/rain_spinner",
@@ -65,6 +66,8 @@
         },
         args: [resource] // pass resource string into the injected function
       });
+      await api.waitForTabIdle();
+      console.log("All HTML requests finished in current tab!");
     }
   }
 
@@ -118,7 +121,7 @@
       //set url
       saveStatus = "Saving Page: " + path
       await setActiveTabUrl(path);
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, 6000));
 
       //action
       setting[path] = await api.exportShotoverSettings();
@@ -126,7 +129,7 @@
         console.warn("Skipping page", path, "because no response from content script");
         continue;
       }
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
     //Log
@@ -173,17 +176,17 @@
     loadStatus = `Going to Page: ${path}`;
     await setActiveTabUrl(path);
     // wait until page loades
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
 
 
     //set settings
     await api.importShotoverSettings(settings[path])
     // wait until page opens tabs
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     //set settings again for the new tabs
     await api.importShotoverSettings(settings[path])
     loadStatus = `Wait to send: ${path}`;
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     loadWorking = false;
   }
 
