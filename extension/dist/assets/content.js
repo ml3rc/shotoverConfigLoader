@@ -1,4 +1,4 @@
-function exportShotoverSettings() {
+async function exportShotoverSettings() {
   const inputs = document.querySelectorAll("input, select, textarea, [contenteditable='true']");
   const data = {};
   inputs.forEach((el, index) => {
@@ -6,6 +6,8 @@ function exportShotoverSettings() {
     let value;
     if (type === "checkbox" || type === "radio") {
       value = el.checked;
+    } else if (type.toLowerCase() === "select") {
+      value = el.value;
     } else if (type === "contenteditable") {
       value = el.innerHTML;
     } else {
@@ -37,41 +39,37 @@ function getUniqueSelector(el) {
   }
   return path.length ? path.join(" > ") : null;
 }
-function importShotoverSettings(settings) {
+async function importShotoverSettings(settings) {
   if (typeof settings === "string") {
     try {
       settings = JSON.parse(settings);
     } catch (e) {
       console.error("Invalid settings JSON", e);
-      return;
+      return false;
     }
   }
-  for (const key in settings) {
-    importSingleEl(settings[key]);
+  try {
+    for (const key of Object.keys(settings)) {
+      await importSingleEl(settings[key]);
+    }
+    return true;
+  } catch (err) {
+    console.error("Error importing settings:", err);
+    return false;
   }
 }
-function importSingleEl(setting) {
-  const { selector, type, value } = setting;
-  const el = document.querySelector(selector);
-  if (!el) {
-    console.warn(`Element not found for selector: ${selector}`);
-    return;
-  }
-  el.focus();
-  if (type === "checkbox" || type === "radio") {
-    el.checked = value;
-  } else if (type === "contenteditable") {
-    el.innerHTML = value;
-  } else if (el.tagName.toLowerCase() === "select") {
-    el.value = value;
-  } else {
-    el.value = value;
-  }
-  el.dispatchEvent(new Event("input", { bubbles: true }));
-  el.dispatchEvent(new Event("change", { bubbles: true }));
-  el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-  el.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter", bubbles: true }));
-  setTimeout(() => el.blur(), 10);
+function injectPageScript() {
+  const script = document.createElement("script");
+  script.src = chrome.runtime.getURL("assets/inject.js");
+  script.onload = () => script.remove();
+  (document.head || document.documentElement).appendChild(script);
+}
+injectPageScript();
+function sendSettingToPage(setting) {
+  window.postMessage({ type: "SET_SCS_FIELD", setting }, "*");
+}
+async function importSingleEl(setting) {
+  sendSettingToPage(setting);
 }
 const handlers = {
   exportShotoverSettings,
@@ -79,16 +77,16 @@ const handlers = {
 };
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("Content script received message:", message);
-  if (handlers[message.type]) {
-    try {
-      const result = handlers[message.type](message.payload);
+  const handler = handlers[message.type];
+  if (handler) {
+    handler(message.payload).then((result) => {
       console.log("Handler result:", result);
       sendResponse(result);
-    } catch (error) {
+    }).catch((error) => {
       console.error("Handler error:", error);
       sendResponse({ error: error.message });
-    }
+    });
+    return true;
   }
-  return true;
 });
 console.log("Shotover Setting Loader Content.js loaded...");

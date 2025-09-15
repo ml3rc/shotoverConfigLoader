@@ -180,11 +180,16 @@
 
 
     //set settings
-    await api.importShotoverSettings(settings[path])
+    if(!await api.importShotoverSettings(settings[path])){
+      return;
+    }
+    
     // wait until page opens tabs
     await new Promise((resolve) => setTimeout(resolve, 2000));
     //set settings again for the new tabs
-    await api.importShotoverSettings(settings[path])
+    if(!await api.importShotoverSettings(settings[path])){
+      return;
+    }
     loadStatus = `Wait to send: ${path}`;
     await new Promise((resolve) => setTimeout(resolve, 1500));
     loadWorking = false;

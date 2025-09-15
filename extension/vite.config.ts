@@ -11,6 +11,7 @@ export default defineConfig({
         popup: resolve(__dirname, "src/popup/popup.html"),
         content: resolve(__dirname, "src/content/content.js"),
         background: resolve(__dirname, "src/background/background.js"),
+        inject: resolve(__dirname, "src/inject/inject.js"),
       },
       output: {
         entryFileNames: `assets/[name].js`,

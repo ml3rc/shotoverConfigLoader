@@ -5392,10 +5392,10 @@ async function callContentScript(type, payload) {
   });
 }
 async function exportShotoverSettings() {
-  return callContentScript("exportShotoverSettings");
+  return await callContentScript("exportShotoverSettings");
 }
 async function importShotoverSettings(settingsJson) {
-  return callContentScript("importShotoverSettings", settingsJson);
+  return await callContentScript("importShotoverSettings", settingsJson);
 }
 async function waitForTabIdle() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -5915,9 +5915,13 @@ function Popup($$anchor, $$props) {
     set(loadStatus, `Going to Page: ${path}`);
     await setActiveTabUrl(path);
     await new Promise((resolve) => setTimeout(resolve, 5e3));
-    await importShotoverSettings(get(settings)[path]);
+    if (!await importShotoverSettings(get(settings)[path])) {
+      return;
+    }
     await new Promise((resolve) => setTimeout(resolve, 2e3));
-    await importShotoverSettings(get(settings)[path]);
+    if (!await importShotoverSettings(get(settings)[path])) {
+      return;
+    }
     set(loadStatus, `Wait to send: ${path}`);
     await new Promise((resolve) => setTimeout(resolve, 1500));
     set(loadWorking, false);

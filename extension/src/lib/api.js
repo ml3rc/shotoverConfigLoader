@@ -1,28 +1,29 @@
 async function callContentScript(type, payload) {
+  // Get the active tab
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) {
     throw new Error("No active tab found");
   }
 
+  // Wrap sendMessage in a Promise that resolves only when the response arrives
   return new Promise((resolve, reject) => {
     chrome.tabs.sendMessage(tab.id, { type, payload }, (response) => {
       if (chrome.runtime.lastError) {
-        // Graceful handling instead of raw reject
         console.warn("Content script not available:", chrome.runtime.lastError.message);
-        resolve(null); // or return a safe default
+        resolve(null); // safe default instead of rejecting
       } else {
-        resolve(response);
+        resolve(response); // resolve with actual response
       }
     });
   });
 }
 
 export async function exportShotoverSettings() {
-  return callContentScript("exportShotoverSettings");
+  return await callContentScript("exportShotoverSettings");
 }
 
 export async function importShotoverSettings(settingsJson) {
-  return callContentScript("importShotoverSettings", settingsJson);
+  return await callContentScript("importShotoverSettings", settingsJson);
 }
 
 export async function waitForTabIdle() {
