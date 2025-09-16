@@ -5,33 +5,47 @@ window.addEventListener('message', (event) => {
         const el = document.querySelector(selector);
         if (!el) return;
 
-        // Prevent redundant set
-        if (
-            (type === 'checkbox' || type === 'radio') && el.checked === value ||
-            type === 'contenteditable' && el.innerHTML === value ||
-            el.tagName.toLowerCase() === 'select' && el.value == value ||
-            (type !== 'checkbox' && type !== 'radio' && type !== 'contenteditable' && el.value == value)
-        ) {
-            return;
-        }
-
         const scs = window.content;
         if (scs && scs.fields) {
             const field = Array.from(scs.fields.values())
                 .find(f => f.elm_query && f.elm_query[0] === el);
 
-            if (field) {
-                field.value = value;
-                field.commit();
-                console.log(`Committed ${selector} -> ${value} via SCS_Content`);
-                return;
-            }
-        }
+            if (!field?.readonly && !field?.disabled && field) {
 
-        // Fallback DOM-only update
-        el.value = value;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true }));
-        console.log(`Committed ${selector} -> ${value} via DOM fallback`);
+                // Get the class name of the field
+                const className = field.constructor.name;
+                if(field.value === value){
+                    console.log("Value of El already set.");
+                    return;
+                }
+
+                if (className.toLowerCase() == "scs_select") {
+                    //Select
+                    field.value = value;
+                    field.commit();
+                    console.log("Set Select ui component");
+                } else if(className.toLowerCase() == "scs_number"){
+                    //Number
+                    let factor =  parseFloat(field.raw) /  parseFloat(field.value);
+                    field.value = value/factor;
+                    console.log(field.value)
+                    field.commit();
+                    console.log("Set Number ui component");
+                } else if(className.toLowerCase() == "scs_text"){
+                    //Text
+                    field.value = value;
+                    field.commit();
+                    console.log("Set Text ui component");
+                } else {
+                    //Else
+                    field.value = value;
+                    field.commit();
+                    console.log("Set ui component");
+                }
+            }
+            return;
+        }
     }
 });
+
+console.log("Inject.js loaded...")

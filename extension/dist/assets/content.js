@@ -59,6 +59,7 @@ async function importShotoverSettings(settings) {
   }
 }
 function injectPageScript() {
+  console.log("Trying to inject SCS modifier script...");
   const script = document.createElement("script");
   script.src = chrome.runtime.getURL("assets/inject.js");
   script.onload = () => script.remove();

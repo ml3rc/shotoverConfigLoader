@@ -71,8 +71,6 @@
     }
   }
 
-
-
   function isLocalUrl(urlString) {
     try {
       const url = new URL(urlString);
@@ -104,7 +102,6 @@
       return false;
     }
   }
-
 
   async function savePages() {
     saveWorking = true;
@@ -240,7 +237,6 @@
       settings = null;
     }
   }
-
 
 </script>
 

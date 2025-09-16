@@ -4,22 +4,37 @@ window.addEventListener("message", (event) => {
     const { selector, type, value } = event.data.setting;
     const el = document.querySelector(selector);
     if (!el) return;
-    if ((type === "checkbox" || type === "radio") && el.checked === value || type === "contenteditable" && el.innerHTML === value || el.tagName.toLowerCase() === "select" && el.value == value || type !== "checkbox" && type !== "radio" && type !== "contenteditable" && el.value == value) {
-      return;
-    }
     const scs = window.content;
     if (scs && scs.fields) {
       const field = Array.from(scs.fields.values()).find((f) => f.elm_query && f.elm_query[0] === el);
-      if (field) {
-        field.value = value;
-        field.commit();
-        console.log(`Committed ${selector} -> ${value} via SCS_Content`);
-        return;
+      if (!field?.readonly && !field?.disabled && field) {
+        const className = field.constructor.name;
+        if (field.value === value) {
+          console.log("Value of El already set.");
+          return;
+        }
+        if (className.toLowerCase() == "scs_select") {
+          field.value = value;
+          field.commit();
+          console.log("Set Select ui component");
+        } else if (className.toLowerCase() == "scs_number") {
+          let factor = parseFloat(field.raw) / parseFloat(field.value);
+          field.value = value / factor;
+          console.log(field.value);
+          field.commit();
+          console.log("Set Number ui component");
+        } else if (className.toLowerCase() == "scs_text") {
+          field.value = value;
+          field.commit();
+          console.log("Set Text ui component");
+        } else {
+          field.value = value;
+          field.commit();
+          console.log("Set ui component");
+        }
       }
+      return;
     }
-    el.value = value;
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    el.dispatchEvent(new Event("change", { bubbles: true }));
-    console.log(`Committed ${selector} -> ${value} via DOM fallback`);
   }
 });
+console.log("Inject.js loaded...");
