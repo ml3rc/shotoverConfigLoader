@@ -4,6 +4,19 @@ window.addEventListener("message", (event) => {
     const { selector, type, value } = event.data.setting;
     const el = document.querySelector(selector);
     if (!el) return;
+    let check = false;
+    let currentEl = el;
+    while (currentEl) {
+      if (getComputedStyle(currentEl).display === "none") {
+        check = true;
+        break;
+      }
+      currentEl = currentEl.parentElement;
+    }
+    if (!check) {
+      console.info("Setting is not avaiable for this gimbal... (skipping)");
+      return;
+    }
     const scs = window.content;
     if (scs && scs.fields) {
       const field = Array.from(scs.fields.values()).find((f) => f.elm_query && f.elm_query[0] === el);
