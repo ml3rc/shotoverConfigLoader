@@ -11,6 +11,23 @@ window.addEventListener('message', (event) => {
                 .find(f => f.elm_query && f.elm_query[0] === el);
 
             if (!field?.readonly && !field?.disabled && field) {
+                //Skip settings
+                const fieldName = field.container.id
+
+                const activeBtn = document.querySelector('button.nav-item.active');
+                const pageName = activeBtn ? activeBtn.getAttribute("data-resource") : null;
+                if(pageName == null){
+                    console.warn("Could not get window pageName");
+                    return;
+                }
+                //Lens Map
+                //5th card
+                if(fieldName.includes("field_5") && pageName.toLowerCase() == "/lens"){
+                    console.info(`Skipping Field ${fieldName}, because its in the Lens Map`)
+                }
+                
+
+
 
                 // Get the class name of the field
                 const className = field.constructor.name;
