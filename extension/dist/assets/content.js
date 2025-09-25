@@ -1,4 +1,5 @@
 async function exportShotoverSettings() {
+  await openAllCards();
   const inputs = document.querySelectorAll("input, select, textarea, [contenteditable='true']");
   const data = {};
   inputs.forEach((el, index) => {
@@ -40,6 +41,7 @@ function getUniqueSelector(el) {
   return path.length ? path.join(" > ") : null;
 }
 async function importShotoverSettings(settings) {
+  await openAllCards();
   if (typeof settings === "string") {
     try {
       settings = JSON.parse(settings);
@@ -57,6 +59,19 @@ async function importShotoverSettings(settings) {
     console.error("Error importing settings:", err);
     return false;
   }
+}
+async function openAllCards() {
+  const buttons = Array.from(document.querySelectorAll('button.btn[data-toggle="collapse"][id^="card_"]'));
+  const filteredButtons = buttons.filter((button) => button.style.display !== "none");
+  for (const button of filteredButtons) {
+    button.click();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    if (button.classList.contains("collapsed")) {
+      button.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+  await new Promise((resolve) => setTimeout(resolve, 2e3));
 }
 function injectPageScript() {
   console.log("Trying to inject SCS modifier script...");

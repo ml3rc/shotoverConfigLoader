@@ -306,14 +306,11 @@ function queue_micro_task(fn) {
   }
   micro_tasks.push(fn);
 }
-function get_pending_boundary() {
-  var boundary = (
+function get_boundary() {
+  const boundary = (
     /** @type {Effect} */
     active_effect.b
   );
-  while (boundary !== null && !boundary.has_pending_snippet()) {
-    boundary = boundary.parent;
-  }
   if (boundary === null) {
     await_outside_boundary();
   }
@@ -377,6 +374,8 @@ function async_derived(fn, location) {
   async_effect(() => {
     try {
       var p = fn();
+      if (prev) Promise.resolve(p).catch(() => {
+      });
     } catch (error) {
       p = Promise.reject(error);
     }
@@ -387,7 +386,7 @@ function async_derived(fn, location) {
       /** @type {Batch} */
       current_batch
     );
-    var pending = boundary.pending;
+    var pending = boundary.is_pending();
     if (should_suspend) {
       boundary.update_pending_count(1);
       if (!pending) batch.increment();
@@ -493,9 +492,7 @@ function update_derived(derived2) {
   if (is_destroying_effect) {
     return;
   }
-  if (batch_deriveds !== null) {
-    batch_deriveds.set(derived2, derived2.v);
-  } else {
+  {
     var status = (skip_reaction || (derived2.f & UNOWNED) !== 0) && derived2.deps !== null ? MAYBE_DIRTY : CLEAN;
     set_signal_status(derived2, status);
   }
@@ -512,7 +509,7 @@ function flatten(sync, async, fn) {
     active_effect
   );
   var restore = capture();
-  var boundary = get_pending_boundary();
+  var boundary = get_boundary();
   Promise.all(async.map((expression) => /* @__PURE__ */ async_derived(expression))).then((result) => {
     batch?.activate();
     restore();
@@ -533,10 +530,12 @@ function capture() {
   var previous_effect = active_effect;
   var previous_reaction = active_reaction;
   var previous_component_context = component_context;
+  var previous_batch = current_batch;
   return function restore() {
     set_active_effect(previous_effect);
     set_active_reaction(previous_reaction);
     set_component_context(previous_component_context);
+    previous_batch?.activate();
   };
 }
 function unset_context() {
@@ -546,7 +545,6 @@ function unset_context() {
 }
 const batches = /* @__PURE__ */ new Set();
 let current_batch = null;
-let batch_deriveds = null;
 let effect_pending_updates = /* @__PURE__ */ new Set();
 let tasks = [];
 function dequeue() {
@@ -648,24 +646,6 @@ class Batch {
    */
   process(root_effects) {
     queued_root_effects = [];
-    var current_values = null;
-    if (batches.size > 1) {
-      current_values = /* @__PURE__ */ new Map();
-      batch_deriveds = /* @__PURE__ */ new Map();
-      for (const [source2, current] of this.current) {
-        current_values.set(source2, { v: source2.v, wv: source2.wv });
-        source2.v = current;
-      }
-      for (const batch of batches) {
-        if (batch === this) continue;
-        for (const [source2, previous] of batch.#previous) {
-          if (!current_values.has(source2)) {
-            current_values.set(source2, { v: source2.v, wv: source2.wv });
-            source2.v = previous;
-          }
-        }
-      }
-    }
     for (const root2 of root_effects) {
       this.#traverse_effect_tree(root2);
     }
@@ -689,14 +669,6 @@ class Batch {
       this.#defer_effects(this.#render_effects);
       this.#defer_effects(this.#effects);
       this.#defer_effects(this.#block_effects);
-    }
-    if (current_values) {
-      for (const [source2, { v, wv }] of current_values) {
-        if (source2.wv <= wv) {
-          source2.v = v;
-        }
-      }
-      batch_deriveds = null;
     }
     for (const effect2 of this.#async_effects) {
       update_effect(effect2);
@@ -727,7 +699,7 @@ class Batch {
           this.#effects.push(effect2);
         } else if ((flags & CLEAN) === 0) {
           if ((flags & ASYNC) !== 0) {
-            var effects = effect2.b?.pending ? this.#boundary_async_effects : this.#async_effects;
+            var effects = effect2.b?.is_pending() ? this.#boundary_async_effects : this.#async_effects;
             effects.push(effect2);
           } else if (is_dirty(effect2)) {
             if ((effect2.f & BLOCK_EFFECT) !== 0) this.#block_effects.push(effect2);
@@ -909,7 +881,7 @@ function flush_queued_effects(effects) {
           effect2.fn = null;
         }
       }
-      if (eager_block_effects.length > 0) {
+      if (eager_block_effects?.length > 0) {
         old_values.clear();
         for (const e of eager_block_effects) {
           update_effect(e);
@@ -1388,24 +1360,31 @@ function create_effect(type, fn, sync, push2 = true) {
     try {
       update_effect(effect2);
       effect2.f |= EFFECT_RAN;
-    } catch (e) {
+    } catch (e2) {
       destroy_effect(effect2);
-      throw e;
+      throw e2;
     }
   } else if (fn !== null) {
     schedule_effect(effect2);
   }
-  var inert = sync && effect2.deps === null && effect2.first === null && effect2.nodes_start === null && effect2.teardown === null && (effect2.f & EFFECT_PRESERVED) === 0;
-  if (!inert && push2) {
-    if (parent !== null) {
-      push_effect(effect2, parent);
+  if (push2) {
+    var e = effect2;
+    if (sync && e.deps === null && e.teardown === null && e.nodes_start === null && e.first === e.last && // either `null`, or a singular child
+    (e.f & EFFECT_PRESERVED) === 0) {
+      e = e.first;
     }
-    if (active_reaction !== null && (active_reaction.f & DERIVED) !== 0 && (type & ROOT_EFFECT) === 0) {
-      var derived2 = (
-        /** @type {Derived} */
-        active_reaction
-      );
-      (derived2.effects ??= []).push(effect2);
+    if (e !== null) {
+      e.parent = parent;
+      if (parent !== null) {
+        push_effect(e, parent);
+      }
+      if (active_reaction !== null && (active_reaction.f & DERIVED) !== 0 && (type & ROOT_EFFECT) === 0) {
+        var derived2 = (
+          /** @type {Derived} */
+          active_reaction
+        );
+        (derived2.effects ??= []).push(e);
+      }
     }
   }
   return effect2;
@@ -1442,7 +1421,7 @@ function user_pre_effect(fn) {
 }
 function component_root(fn) {
   Batch.ensure();
-  const effect2 = create_effect(ROOT_EFFECT, fn, true);
+  const effect2 = create_effect(ROOT_EFFECT | EFFECT_PRESERVED, fn, true);
   return (options = {}) => {
     return new Promise((fulfil) => {
       if (options.outro) {
@@ -1476,7 +1455,7 @@ function block(fn, flags = 0) {
   return effect2;
 }
 function branch(fn, push2 = true) {
-  return create_effect(BRANCH_EFFECT, fn, true, push2);
+  return create_effect(BRANCH_EFFECT | EFFECT_PRESERVED, fn, true, push2);
 }
 function execute_effect_teardown(effect2) {
   var teardown2 = effect2.teardown;
@@ -1978,9 +1957,6 @@ function get(signal) {
   } else if (is_derived) {
     derived2 = /** @type {Derived} */
     signal;
-    if (batch_deriveds?.has(derived2)) {
-      return batch_deriveds.get(derived2);
-    }
     if (is_dirty(derived2)) {
       update_derived(derived2);
     }
@@ -3506,9 +3482,10 @@ function get_attributes(element2) {
 }
 var setters_cache = /* @__PURE__ */ new Map();
 function get_setters(element2) {
-  var setters = setters_cache.get(element2.nodeName);
+  var cache_key = element2.getAttribute("is") || element2.nodeName;
+  var setters = setters_cache.get(cache_key);
   if (setters) return setters;
-  setters_cache.set(element2.nodeName, setters = []);
+  setters_cache.set(cache_key, setters = []);
   var descriptors;
   var proto = element2;
   var element_proto = Element.prototype;
@@ -4980,6 +4957,7 @@ function CommonLabel($$anchor, $$props) {
   function getElement() {
     return element2.getElement();
   }
+  var $$exports = { getElement };
   var fragment = comment();
   var node = first_child(fragment);
   {
@@ -5032,7 +5010,7 @@ function CommonLabel($$anchor, $$props) {
     });
   }
   append($$anchor, fragment);
-  return pop({ getElement });
+  return pop($$exports);
 }
 var root_1$3 = /* @__PURE__ */ from_svg(`<svg><!></svg>`);
 function SmuiElement($$anchor, $$props) {
@@ -5058,6 +5036,7 @@ function SmuiElement($$anchor, $$props) {
   function getElement() {
     return element$1;
   }
+  var $$exports = { getElement };
   var fragment = comment();
   var node = first_child(fragment);
   {
@@ -5115,7 +5094,7 @@ function SmuiElement($$anchor, $$props) {
     });
   }
   append($$anchor, fragment);
-  return pop({ getElement });
+  return pop($$exports);
 }
 var root_2$1 = /* @__PURE__ */ from_html(`<div class="mdc-button__touch"></div>`);
 var root_1$2 = /* @__PURE__ */ from_html(`<div class="mdc-button__ripple"></div> <!><!>`, 1);
@@ -5188,6 +5167,7 @@ function Button($$anchor, $$props) {
   function getElement() {
     return element2.getElement();
   }
+  var $$exports = { getElement };
   var fragment = comment();
   var node = first_child(fragment);
   {
@@ -5282,7 +5262,7 @@ function Button($$anchor, $$props) {
     });
   }
   append($$anchor, fragment);
-  return pop({ getElement });
+  return pop($$exports);
 }
 var root$5 = /* @__PURE__ */ from_html(`<div><!></div>`);
 function InnerGrid($$anchor, $$props) {
@@ -5299,6 +5279,7 @@ function InnerGrid($$anchor, $$props) {
   function getElement() {
     return element2;
   }
+  var $$exports = { getElement };
   var div = root$5();
   attribute_effect(div, ($0) => ({ class: $0, ...restProps }), [
     () => classMap({ "mdc-layout-grid__inner": true, [className()]: true })
@@ -5308,7 +5289,7 @@ function InnerGrid($$anchor, $$props) {
   bind_this(div, ($$value) => element2 = $$value, () => element2);
   action(div, ($$node, $$action_arg) => useActions?.($$node, $$action_arg), use);
   append($$anchor, div);
-  return pop({ getElement });
+  return pop($$exports);
 }
 var root$4 = /* @__PURE__ */ from_html(`<div><!></div>`);
 function LayoutGrid($$anchor, $$props) {
@@ -5327,6 +5308,7 @@ function LayoutGrid($$anchor, $$props) {
   function getElement() {
     return element2;
   }
+  var $$exports = { getElement };
   var div = root$4();
   attribute_effect(div, ($0, $1) => ({ class: $0, ...$1 }), [
     () => classMap({
@@ -5353,7 +5335,7 @@ function LayoutGrid($$anchor, $$props) {
   bind_this(div, ($$value) => element2 = $$value, () => element2);
   action(div, ($$node, $$action_arg) => useActions?.($$node, $$action_arg), use);
   append($$anchor, div);
-  return pop({ getElement });
+  return pop($$exports);
 }
 var root$3 = /* @__PURE__ */ from_html(`<div><!></div>`);
 function Cell($$anchor, $$props) {
@@ -5374,6 +5356,7 @@ function Cell($$anchor, $$props) {
   function getElement() {
     return element2;
   }
+  var $$exports = { getElement };
   var div = root$3();
   attribute_effect(div, ($0) => ({ class: $0, ...restProps }), [
     () => classMap({
@@ -5390,7 +5373,7 @@ function Cell($$anchor, $$props) {
   bind_this(div, ($$value) => element2 = $$value, () => element2);
   action(div, ($$node, $$action_arg) => useActions?.($$node, $$action_arg), use);
   append($$anchor, div);
-  return pop({ getElement });
+  return pop($$exports);
 }
 async function callContentScript(type, payload) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -5474,6 +5457,7 @@ function Card($$anchor, $$props) {
   function getElement() {
     return element2;
   }
+  var $$exports = { getElement };
   var div = root$2();
   attribute_effect(div, ($0) => ({ class: $0, ...restProps }), [
     () => classMap({
@@ -5488,7 +5472,7 @@ function Card($$anchor, $$props) {
   bind_this(div, ($$value) => element2 = $$value, () => element2);
   action(div, ($$node, $$action_arg) => useActions?.($$node, $$action_arg), use);
   append($$anchor, div);
-  return pop({ getElement });
+  return pop($$exports);
 }
 /**
  * @license
@@ -5737,6 +5721,7 @@ function CircularProgress($$anchor, $$props) {
   function getElement() {
     return element2;
   }
+  var $$exports = { getElement };
   var div = root$1();
   attribute_effect(
     div,
@@ -5788,7 +5773,7 @@ function CircularProgress($$anchor, $$props) {
   bind_this(div, ($$value) => element2 = $$value, () => element2);
   action(div, ($$node, $$action_arg) => useActions?.($$node, $$action_arg), use);
   append($$anchor, div);
-  return pop({ getElement });
+  return pop($$exports);
 }
 var root_3 = /* @__PURE__ */ from_html(`<h1>Shotover Setting Loader</h1>`);
 var root_4 = /* @__PURE__ */ from_html(`<h1 class="waring svelte-147gk6q">⚠ Do not click anywhere ⚠</h1>`);
@@ -5820,10 +5805,10 @@ function Popup($$anchor, $$props) {
     "/controller",
     "/gimbal",
     "/lens",
-    "/wheels",
-    "/gimbal/motors",
-    "/lens/motors",
-    "/lens/rain_spinner"
+    "/wheels"
+    // "/gimbal/motors",
+    // "/lens/motors",
+    // "/lens/rain_spinner",
   ];
   async function getActiveTabUrl() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

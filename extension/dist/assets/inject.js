@@ -4,17 +4,16 @@ window.addEventListener("message", (event) => {
     const { selector, type, value } = event.data.setting;
     const el = document.querySelector(selector);
     if (!el) return;
-    let check = false;
+    let displayIsNone = false;
     let currentEl = el;
     while (currentEl) {
-      if (getComputedStyle(currentEl).display === "none") {
-        check = true;
+      if (currentEl.style.display == "none") {
+        displayIsNone = true;
         break;
       }
       currentEl = currentEl.parentElement;
     }
-    if (!check) {
-      console.info("Setting is not avaiable for this gimbal... (skipping)");
+    if (displayIsNone) {
       return;
     }
     const scs = window.content;
@@ -29,31 +28,37 @@ window.addEventListener("message", (event) => {
           return;
         }
         if (fieldName.includes("field_5") && pageName.toLowerCase() == "/lens") {
-          console.info(`Skipping Field ${fieldName}, because its in the Lens Map`);
+          return;
         }
         const className = field.constructor.name;
-        if (field.value === value) {
-          console.log("Value of El already set.");
+        if (field.value == value) {
           return;
         }
         if (className.toLowerCase() == "scs_select") {
+          if (field.value == null && value.includes("...")) {
+            return;
+          }
           field.value = value;
           field.commit();
-          console.log("Set Select ui component");
+          console.log(`Set Select ui component: ${field.value}`);
         } else if (className.toLowerCase() == "scs_number") {
-          let factor = parseFloat(field.raw) / parseFloat(field.value);
-          field.value = value / factor;
-          console.log(field.value);
+          let factor = 1;
+          if (parseFloat(field.value) !== 0) {
+            factor = parseFloat(field.raw) / parseFloat(field.value);
+          } else {
+            if (field?.on_get) {
+              if (field.on_get?.name.includes("percent")) {
+                factor = 100;
+              }
+            }
+          }
+          const calValue = parseFloat(value) / factor;
+          if (calValue == parseFloat(field.value)) {
+            return;
+          }
+          field.value = parseFloat(value) / factor;
           field.commit();
-          console.log("Set Number ui component");
-        } else if (className.toLowerCase() == "scs_text") {
-          field.value = value;
-          field.commit();
-          console.log("Set Text ui component");
-        } else {
-          field.value = value;
-          field.commit();
-          console.log("Set ui component");
+          console.log(`Set Number ui component: ${value}`);
         }
       }
       return;

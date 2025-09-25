@@ -6,17 +6,18 @@ window.addEventListener('message', (event) => {
         if (!el) return;
 
         //check if parent el if hidden -> then it is a setting for another gimbal
-        let check = false;
+        let displayIsNone = false;
         let currentEl = el;
         while (currentEl) {
-            if (getComputedStyle(currentEl).display === 'none') {
-                check = true;
+            if (currentEl.style.display == 'none') {
+                displayIsNone = true;
                 break;
             }
             currentEl = currentEl.parentElement;
         }
-        if(!check){
-            console.info("Setting is not avaiable for this gimbal... (skipping)");
+
+        if(displayIsNone){
+            // console.info("Setting is not avaiable for this gimbal... (skipping)");
             return;
         }
             
@@ -26,6 +27,7 @@ window.addEventListener('message', (event) => {
                 .find(f => f.elm_query && f.elm_query[0] === el);
 
             if (!field?.readonly && !field?.disabled && field) {
+
                 //Skip settings
                 const fieldName = field.container.id
 
@@ -38,42 +40,52 @@ window.addEventListener('message', (event) => {
                 //Lens Map
                 //5th card
                 if(fieldName.includes("field_5") && pageName.toLowerCase() == "/lens"){
-                    console.info(`Skipping Field ${fieldName}, because its in the Lens Map`)
+                    // console.info(`Skipping Field ${fieldName}, because its in the Lens Map`)
+                    return;
                 }
                 
 
-
-
                 // Get the class name of the field
                 const className = field.constructor.name;
-                if(field.value === value){
-                    console.log("Value of El already set.");
+                if(field.value == value){
+                    // console.log(`Value of El already set: ${field.value}`); 
                     return;
                 }
 
                 if (className.toLowerCase() == "scs_select") {
                     //Select
+                    if(field.value == null && value.includes("...")){
+                        // console.log(`Value of El already set: ${field.value}`); 
+                        return;
+                    }
                     field.value = value;
                     field.commit();
-                    console.log("Set Select ui component");
+                    console.log(`Set Select ui component: ${field.value}`);
                 } else if(className.toLowerCase() == "scs_number"){
-                    //Number
-                    let factor =  parseFloat(field.raw) /  parseFloat(field.value);
-                    field.value = value/factor;
-                    console.log(field.value)
+                    // console.log(`Raw: ${parseFloat(field.raw)}`)
+                    // console.log(`Get Val: ${parseFloat(field.value)}`)
+                    // console.log(`Set Val: ${parseFloat(value)}`)
+                    let factor = 1
+                    if(parseFloat(field.value) !== 0){
+                        factor = parseFloat(field.raw) / parseFloat(field.value);
+                    } else {
+                        if(field?.on_get){
+                            if(field.on_get?.name.includes("percent")){
+                                factor = 100;
+                            }
+                        }
+                    }
+                    const calValue = parseFloat(value) / factor;
+                    if(calValue == parseFloat(field.value)){
+                        // console.log(`Value of El already set: ${field.value}`);
+                        return;
+                    }
+                    field.value = parseFloat(value) / factor;
                     field.commit();
-                    console.log("Set Number ui component");
-                } else if(className.toLowerCase() == "scs_text"){
-                    //Text
-                    field.value = value;
-                    field.commit();
-                    console.log("Set Text ui component");
-                } else {
-                    //Else
-                    field.value = value;
-                    field.commit();
-                    console.log("Set ui component");
-                }
+                    console.log(`Set Number ui component: ${value}`);
+                } 
+            } else {
+                // console.log(`field is disabled val: ${field?.value}`)
             }
             return;
         }

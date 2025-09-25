@@ -25,9 +25,9 @@
     "/gimbal",
     "/lens",
     "/wheels",
-    "/gimbal/motors",
-    "/lens/motors",
-    "/lens/rain_spinner",
+    // "/gimbal/motors",
+    // "/lens/motors",
+    // "/lens/rain_spinner",
   ];
 
   async function getActiveTabUrl() {

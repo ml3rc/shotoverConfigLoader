@@ -1,6 +1,7 @@
 //Load / Export
 
 async function exportShotoverSettings() {
+  await openAllCards();
   const inputs = document.querySelectorAll("input, select, textarea, [contenteditable='true']");
   const data = {};
 
@@ -60,6 +61,7 @@ function getUniqueSelector(el) {
 
 // --- Apply settings back into the page ---
 export async function importShotoverSettings(settings) {
+  await openAllCards();
   // Accept both JSON string and parsed object
   if (typeof settings === "string") {
     try {
@@ -79,6 +81,24 @@ export async function importShotoverSettings(settings) {
     console.error("Error importing settings:", err);
     return false;
   }
+}
+
+
+async function openAllCards() {
+  const buttons = Array.from(document.querySelectorAll('button.btn[data-toggle="collapse"][id^="card_"]'));
+
+  // Filter buttons that are visible and currently closed (have 'collapsed' class)
+  const filteredButtons = buttons.filter(button => button.style.display !== 'none');
+
+  for (const button of filteredButtons) {
+    button.click();
+    await new Promise(resolve => setTimeout(resolve, 100));
+    if(button.classList.contains('collapsed')){
+      button.click();
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  await new Promise(resolve => setTimeout(resolve, 2000));
 }
 
 
